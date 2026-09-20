@@ -188,10 +188,17 @@ class TableAccessService implements SingletonInterface
         
         // Check workspace capability. Workspace-capable tables are the default set.
         // Non-workspace tables are only accessible if explicitly configured as additional read-only tables.
+        //
+        // In live mode nothing is staged, so workspace capability says nothing about
+        // whether a table can be edited: the restriction is dropped and every table
+        // that survives the other checks becomes writable. The explicitly configured
+        // read-only tables stay read-only in both modes - they are opted in by the
+        // integrator precisely because writing them is unsafe (sys_file, for
+        // instance, is owned by FAL's indexer).
         $info['workspace_capable'] = $this->tcaSchemaFactory->has($table)
             && $this->tcaSchemaFactory->get($table)->hasCapability(TcaSchemaCapability::Workspace);
         $isAdditionalReadOnly = in_array($table, $this->getAdditionalReadOnlyTables(), true);
-        if (!$info['workspace_capable'] && !$isAdditionalReadOnly) {
+        if (!$info['workspace_capable'] && !$isAdditionalReadOnly && !$this->workspaceContextService->isLiveMode()) {
             $info['reasons'][] = 'Table is not workspace-capable';
             return $info;
         }
@@ -574,7 +581,14 @@ class TableAccessService implements SingletonInterface
         if (!empty($GLOBALS['TCA'][$table]['ctrl']['adminOnly']) && !$this->getBackendUser()->isAdmin()) {
             return true;
         }
-        
+
+        // Credential tables are never exposed, in any mode. Workspace capability used
+        // to keep fe_users and friends out on its own; live mode drops that check, so
+        // the rule has to be stated explicitly instead of relied upon as a side effect.
+        if ($this->hasPasswordField($table)) {
+            return true;
+        }
+
         // Root-level-only tables (rootLevel=1) are restricted unless they're
         // workspace-capable or explicitly configured as additional read-only tables.
         $rootLevel = $GLOBALS['TCA'][$table]['ctrl']['rootLevel'] ?? 0;
@@ -601,6 +615,21 @@ class TableAccessService implements SingletonInterface
         return false;
     }
     
+    /**
+     * Whether a table stores credentials, i.e. has a field of TCA type "password"
+     * (fe_users, be_users, and third-party tables modelled after them).
+     */
+    protected function hasPasswordField(string $table): bool
+    {
+        foreach ($GLOBALS['TCA'][$table]['columns'] ?? [] as $column) {
+            if (($column['config']['type'] ?? '') === 'password') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Check if a table is read-only
      */

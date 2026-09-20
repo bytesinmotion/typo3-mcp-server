@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hn\McpServer\Service;
 
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\WorkspaceAspect;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -18,11 +19,47 @@ use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 class WorkspaceContextService
 {
     /**
+     * Cached extension configuration flag, see isLiveMode()
+     */
+    protected ?bool $liveMode = null;
+
+    /**
+     * Whether live mode is enabled in the extension configuration.
+     *
+     * In live mode all MCP operations run in the live workspace (0): no MCP
+     * workspace is created, nothing is staged as a draft and there is no
+     * publishing step. Meant for building a new site, not for production.
+     */
+    public function isLiveMode(): bool
+    {
+        if ($this->liveMode === null) {
+            try {
+                $this->liveMode = (bool)GeneralUtility::makeInstance(ExtensionConfiguration::class)
+                    ->get('mcp_server', 'liveWorkspaceMode');
+            } catch (\Throwable) {
+                // Setting not available (e.g. extension configuration not written yet)
+                $this->liveMode = false;
+            }
+        }
+
+        return $this->liveMode;
+    }
+
+    /**
      * Switch to the optimal workspace for the current user.
      * Creates a new workspace if none exists and user can create workspaces.
      */
     public function switchToOptimalWorkspace(BackendUserAuthentication $beUser): int
     {
+        // Live mode wins over everything: force the live workspace, even when the
+        // backend user session is currently sitting in a workspace, and never
+        // create an MCP workspace.
+        if ($this->isLiveMode()) {
+            $this->setWorkspaceContext($beUser, 0);
+
+            return 0;
+        }
+
         // If already in a workspace, don't switch
         $currentWorkspace = $beUser->workspace ?? 0;
         if ($currentWorkspace > 0) {
@@ -252,7 +289,8 @@ class WorkspaceContextService
                 'id' => 0,
                 'title' => 'Live',
                 'description' => 'Live workspace - changes are immediately public',
-                'is_live' => true
+                'is_live' => true,
+                'live_mode' => $this->isLiveMode(),
             ];
         }
         
@@ -274,7 +312,8 @@ class WorkspaceContextService
                     'id' => (int)$workspace['uid'],
                     'title' => $workspace['title'],
                     'description' => $workspace['description'],
-                    'is_live' => false
+                    'is_live' => false,
+                    'live_mode' => false,
                 ];
             }
         } catch (\Throwable $e) {
@@ -285,7 +324,8 @@ class WorkspaceContextService
             'id' => $workspaceId,
             'title' => 'Unknown Workspace',
             'description' => 'Workspace information not available',
-            'is_live' => false
+            'is_live' => false,
+            'live_mode' => false,
         ];
     }
 }

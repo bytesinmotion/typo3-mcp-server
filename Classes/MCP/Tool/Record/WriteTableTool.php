@@ -47,13 +47,23 @@ class WriteTableTool extends AbstractRecordTool
             ? ' Language fields (sys_language_uid) can be provided as ISO codes (e.g., "de", "fr") instead of numeric IDs.'
             : '';
 
+        $modeDescription = $this->workspaceContextService->isLiveMode()
+            ? 'Create, update, translate, or delete records in TYPO3 tables. '
+                . 'Live mode is enabled: changes are written directly to the live site and are public immediately, '
+                . 'without a draft stage, a publishing step or an undo.'
+            : 'Create, update, translate, or delete records in workspace-capable TYPO3 tables. '
+                . 'All changes are made in workspace context and require publishing to become live.';
+
         return [
-            'description' => 'Create, update, translate, or delete records in workspace-capable TYPO3 tables. All changes are made in workspace context and require publishing to become live.' . $languageHint . ' ' .
+            'description' => $modeDescription . $languageHint . ' ' .
                 'Before creating or updating content, always use GetPage to understand the page structure, existing content, and writing style. ' .
                 'Check existing content elements with ReadTable to ensure new content fits the page\'s tone and doesn\'t duplicate existing elements. ' .
                 'For content creation, verify the appropriate colPos by examining existing content layout. ' .
-                'Note: If you encounter plugins (CType=list) that reference non-workspace capable tables, ' .
-                'look for record storage folders (doktype=254) where the actual records are stored.',
+                ($this->workspaceContextService->isLiveMode()
+                    ? 'Note: If you encounter plugins (CType=list) that reference other tables, '
+                        . 'look for record storage folders (doktype=254) where the actual records are stored.'
+                    : 'Note: If you encounter plugins (CType=list) that reference non-workspace capable tables, '
+                        . 'look for record storage folders (doktype=254) where the actual records are stored.'),
             'inputSchema' => [
                 'type' => 'object',
                 'properties' => [

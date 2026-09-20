@@ -175,12 +175,19 @@ abstract class AbstractRecordTool extends AbstractTool
 
     /**
      * Get workspace hint text to prepend to tool output.
-     * Returns empty string when in live workspace.
+     *
+     * In live mode the hint warns that there is no draft stage; without an
+     * explicit mode, being in the live workspace is unremarkable and produces
+     * no hint at all.
      */
     protected function getWorkspaceHint(): string
     {
         $info = $this->workspaceContextService->getWorkspaceInfo();
         if ($info['is_live']) {
+            if (!empty($info['live_mode'])) {
+                return '[LIVE MODE: Changes are written directly to the live site and are public immediately.'
+                    . ' There is no draft stage, no publishing step and no undo.]' . "\n\n";
+            }
             return '';
         }
         return '[WORKSPACE: "' . $info['title'] . '" — Edits are staged as drafts, not yet live.]' . "\n\n";

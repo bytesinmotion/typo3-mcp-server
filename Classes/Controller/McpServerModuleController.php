@@ -100,6 +100,7 @@ class McpServerModuleController
             'userId' => $userId,
             'siteName' => $this->getSiteName(),
             'hasWorkspace' => $hasWorkspace,
+            'isLiveMode' => $this->workspaceContextService->isLiveMode(),
             'isLocalhost' => $isLocalhost,
             'isSubdirectoryInstall' => $isSubdirectoryInstall,
             'wellKnownAuthServerUrl' => $wellKnownAuthServerUrl,

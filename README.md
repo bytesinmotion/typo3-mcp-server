@@ -99,6 +99,29 @@ The defaults work out of the box. All settings live in the extension configurati
 | `maxFileSizeMb`              | `500`               | Upper limit in MiB for files fetched from a URL or received through an upload link |
 | `additionalReadOnlyTables`   | `sys_file`          | Non-workspace-capable tables exposed read-only — this is what lets the AI browse your files |
 | `additionalStandaloneTables` | `sys_file_metadata` | `hideTable` tables exposed as independent tables — this is what makes file metadata such as titles and alt texts editable |
+| `liveWorkspaceMode`          | off                 | Write directly to the live database instead of staging changes in a workspace — see below |
+
+#### Live mode (`liveWorkspaceMode`)
+
+By default every change is staged in an automatically created MCP workspace and has to be
+published in the backend. That is the right behaviour for a running site, but while you are
+building a new one it means publishing after every batch of content.
+
+With live mode enabled:
+
+- MCP always works in the live workspace; no MCP workspace is created, and an existing
+  workspace context of the backend user is overridden.
+- Changes are written straight to the live records — no draft stage, no publishing step, no undo.
+- Tables without workspace support become writable too (redirects, TypoScript records, …),
+  since workspace capability no longer says anything about whether a table can be edited.
+- Tool output is prefixed with a `[LIVE MODE: …]` notice so the AI knows it has no safety net.
+
+Three limits still apply in live mode: tables with a password field (`fe_users`, `be_users` and
+anything modelled after them) stay hidden, tables marked `readOnly` in TCA stay read-only, and
+tables listed in `additionalReadOnlyTables` stay read-only.
+
+Anything already staged in a workspace stays there and becomes invisible to the MCP tools while
+live mode is on — publish or discard it in the backend before switching.
 
 ## Usage
 

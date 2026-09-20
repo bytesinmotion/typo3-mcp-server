@@ -17,7 +17,18 @@
                 </div>
                 <div class="card-body pb-0">
                     <!-- Warnings -->
-                    <f:if condition="!{hasWorkspace}">
+                    <f:if condition="{isLiveMode}">
+                        <div class="alert alert-danger mb-3">
+                            <h6><strong>Live mode is enabled</strong></h6>
+                            <p class="mb-0">
+                                MCP tools write directly to the live database. Changes are public immediately &mdash; there is no draft stage,
+                                no publishing step and no undo, and tables without workspace support are writable as well.
+                                Turn this off under <strong>Admin Tools &rarr; Settings &rarr; Extension Configuration &rarr; mcp_server</strong>
+                                (<code>liveWorkspaceMode</code>) to stage changes in a workspace again.
+                            </p>
+                        </div>
+                    </f:if>
+                    <f:if condition="!{hasWorkspace} && !{isLiveMode}">
                         <div class="alert alert-warning mb-3">
                             <h6><strong>No workspace configured</strong></h6>
                             <p class="mb-0">
