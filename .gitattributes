@@ -1,0 +1,12 @@
+# Development files left out of `git archive` and GitHub's ZIP download,
+# so both yield a package that installs as-is (rename the folder to mcp_server).
+/.gitattributes      export-ignore
+/.gitignore          export-ignore
+/.github             export-ignore
+/Build               export-ignore
+/Tests               export-ignore
+/CLAUDE.md           export-ignore
+/PLAN.md             export-ignore
+/TECHNICAL_OVERVIEW.md export-ignore
+/mcp_setup.png       export-ignore
+/phpunit.xml.dist    export-ignore
