@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace Hn\McpServer\Service;
 
 use Doctrine\DBAL\ArrayParameterType;
+use Hn\McpServer\Compat\LegacyTcaSchemaFactory;
 use Hn\McpServer\Event\AfterSchemaLoadEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
-use TYPO3\CMS\Core\Schema\Capability\TcaSchemaCapability;
-use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -25,7 +24,8 @@ class TableAccessService implements SingletonInterface
 {
     protected ?BackendUserAuthentication $backendUser = null;
     protected WorkspaceContextService $workspaceContextService;
-    protected TcaSchemaFactory $tcaSchemaFactory;
+    /** TcaSchemaFactory on TYPO3 >= 13, LegacyTcaSchemaFactory on TYPO3 12 */
+    protected object $tcaSchemaFactory;
     protected ?array $additionalReadOnlyTables = null;
     protected ?array $additionalStandaloneTables = null;
     protected ?int $cachedDefaultTSconfigPid = null;
@@ -33,7 +33,7 @@ class TableAccessService implements SingletonInterface
     public function __construct()
     {
         $this->workspaceContextService = GeneralUtility::makeInstance(WorkspaceContextService::class);
-        $this->tcaSchemaFactory = GeneralUtility::makeInstance(TcaSchemaFactory::class);
+        $this->tcaSchemaFactory = LegacyTcaSchemaFactory::create();
     }
 
     /**
@@ -195,8 +195,8 @@ class TableAccessService implements SingletonInterface
         // read-only tables stay read-only in both modes - they are opted in by the
         // integrator precisely because writing them is unsafe (sys_file, for
         // instance, is owned by FAL's indexer).
-        $info['workspace_capable'] = $this->tcaSchemaFactory->has($table)
-            && $this->tcaSchemaFactory->get($table)->hasCapability(TcaSchemaCapability::Workspace);
+        // Same test as TcaSchemaCapability::Workspace, which TYPO3 12 lacks.
+        $info['workspace_capable'] = (bool)($GLOBALS['TCA'][$table]['ctrl']['versioningWS'] ?? false);
         $isAdditionalReadOnly = in_array($table, $this->getAdditionalReadOnlyTables(), true);
         if (!$info['workspace_capable'] && !$isAdditionalReadOnly && !$this->workspaceContextService->isLiveMode()) {
             $info['reasons'][] = 'Table is not workspace-capable';

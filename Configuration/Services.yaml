@@ -6,7 +6,10 @@ services:
 
   Hn\McpServer\:
     resource: '../Classes/*'
-    exclude: '../Classes/Domain/Model/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+      # TYPO3 12 value objects, instantiated directly (not services)
+      - '../Classes/Compat/*'
 
   # Explicitly register command controllers
   Hn\McpServer\Command\McpServerCommand:

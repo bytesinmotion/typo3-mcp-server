@@ -249,7 +249,9 @@ class FileUploadService implements SingletonInterface
         }
 
         try {
-            $file = $folder->getStorage()->addFile($tempPath, $folder, $fileName, DuplicationBehavior::RENAME);
+            // TYPO3 12 has no DuplicationBehavior enum yet and expects the plain string
+            $conflictMode = enum_exists(DuplicationBehavior::class) ? DuplicationBehavior::RENAME : 'rename';
+            $file = $folder->getStorage()->addFile($tempPath, $folder, $fileName, $conflictMode);
         } catch (IllegalFileExtensionException $e) {
             throw new \InvalidArgumentException('This file extension is not allowed: ' . $e->getMessage(), 0, $e);
         } catch (\TYPO3\CMS\Core\Validation\ResultException $e) {
