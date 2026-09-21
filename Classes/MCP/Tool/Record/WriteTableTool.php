@@ -9,6 +9,7 @@ use Hn\McpServer\Event\AfterRecordWriteEvent;
 use Hn\McpServer\Event\BeforeRecordWriteEvent;
 use Hn\McpServer\Exception\DatabaseException;
 use Hn\McpServer\Exception\ValidationException;
+use Hn\McpServer\Service\FlexFormDataMapper;
 use Hn\McpServer\Service\LanguageService;
 use Mcp\Types\CallToolResult;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -345,8 +346,8 @@ class WriteTableTool extends AbstractRecordTool
         $inlineRelations = $this->extractInlineRelations($table, $data);
         
         // Convert data for storage
-        $data = $this->convertDataForStorage($table, $data);
-        
+        $data = $this->convertDataForStorage($table, $data, ['pid' => $pid]);
+
         // Prepare the data array
         $newRecordData = $data;
 
@@ -582,8 +583,9 @@ class WriteTableTool extends AbstractRecordTool
         // Extract inline relations before converting data
         $inlineRelations = $this->extractInlineRelations($table, $data);
         
-        // Convert data for storage
-        $data = $this->convertDataForStorage($table, $data);
+        // Convert data for storage. The stored record supplies the type field and
+        // pid for FlexForm data structure lookup when the update does not set them.
+        $data = $this->convertDataForStorage($table, $data, BackendUtility::getRecordWSOL($table, $uid) ?? []);
 
         // For translation records, add l10n_state overrides so DataHandler treats
         // explicitly updated fields as "custom" (not synced from parent)
@@ -1808,8 +1810,11 @@ class WriteTableTool extends AbstractRecordTool
 
     /**
      * Convert data for storage
+     *
+     * @param array $row The record being written (type field, pid), needed to
+     *                   resolve FlexForm data structures
      */
-    protected function convertDataForStorage(string $table, array $data): array
+    protected function convertDataForStorage(string $table, array $data, array $row = []): array
     {
         // Process each field
         foreach ($data as $fieldName => $value) {
@@ -1846,38 +1851,13 @@ class WriteTableTool extends AbstractRecordTool
                     continue;
                 }
                 
-                // If the value is an array or JSON string, convert it to XML
+                // An array or JSON string becomes a DataHandler FlexForm array, which
+                // DataHandler merges into the stored value (see FlexFormDataMapper)
                 $flexFormArray = is_array($value) ? $value : (is_string($value) && strpos($value, '{') === 0 ? json_decode($value, true) : null);
-                
+
                 if (is_array($flexFormArray)) {
-                    // Prepare the data structure for TYPO3's XML conversion
-                    $flexFormData = [
-                        'data' => [
-                            'sDEF' => [
-                                'lDEF' => []
-                            ]
-                        ]
-                    ];
-                    
-                    // Process settings fields
-                    if (isset($flexFormArray['settings']) && is_array($flexFormArray['settings'])) {
-                        foreach ($flexFormArray['settings'] as $settingKey => $settingValue) {
-                            $flexFormData['data']['sDEF']['lDEF']['settings.' . $settingKey]['vDEF'] = $settingValue;
-                        }
-                    }
-                    
-                    // Process other fields
-                    foreach ($flexFormArray as $key => $val) {
-                        if ($key !== 'settings' && !is_array($val)) {
-                            $flexFormData['data']['sDEF']['lDEF'][$key]['vDEF'] = $val;
-                        }
-                    }
-                    
-                    // Use TYPO3's GeneralUtility::array2xml to convert the array to XML
-                    $xml = '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>' . "\n";
-                    $xml .= GeneralUtility::array2xml($flexFormData, '', 0, 'T3FlexForms');
-                    
-                    $data[$fieldName] = $xml;
+                    $data[$fieldName] = GeneralUtility::makeInstance(FlexFormDataMapper::class)
+                        ->toDataMapValue($table, $fieldName, $flexFormArray, $data + $row);
                 }
             }
         }
