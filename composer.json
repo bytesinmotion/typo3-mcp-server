@@ -14,12 +14,15 @@
         "php": ">=8.2",
         "logiscape/mcp-sdk-php": "^2.0",
         "typo3/cms-backend": "^12.4 || ^13.4 || ^14.3",
-        "typo3/cms-core": "^12.4 || ^13.4 || ^14.3",
-        "typo3/cms-workspaces": "^12.4 || ^13.4 || ^14.3"
+        "typo3/cms-core": "^12.4 || ^13.4 || ^14.3"
+    },
+    "suggest": {
+        "typo3/cms-workspaces": "Stage MCP changes as drafts in a workspace. Without it MCP writes directly to the live site."
     },
     "require-dev": {
         "typo3/testing-framework": "^8.2 || ^9.2",
         "typo3/cms-install": "^12.4 || ^13.4 || ^14.3",
+        "typo3/cms-workspaces": "^12.4 || ^13.4 || ^14.3",
         "georgringer/news": "^14.0",
         "b13/container": "^4.0",
         "brianium/paratest": "^7.4"

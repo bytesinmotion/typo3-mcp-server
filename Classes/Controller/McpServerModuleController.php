@@ -75,8 +75,9 @@ class McpServerModuleController
         
         
 
-        // Check if any workspace exists
-        $hasWorkspace = $this->hasAnyWorkspace();
+        // Check if any workspace exists (sys_workspace only exists with EXT:workspaces)
+        $workspacesAvailable = WorkspaceContextService::isWorkspacesAvailable();
+        $hasWorkspace = $workspacesAvailable && $this->hasAnyWorkspace();
 
         // Detect if the server is running on localhost
         $isLocalhost = $this->isLocalhostUrl($baseUrl);
@@ -101,6 +102,7 @@ class McpServerModuleController
             'siteName' => $this->getSiteName(),
             'hasWorkspace' => $hasWorkspace,
             'isLiveMode' => $this->workspaceContextService->isLiveMode(),
+            'workspacesAvailable' => $workspacesAvailable,
             'isLocalhost' => $isLocalhost,
             'isSubdirectoryInstall' => $isSubdirectoryInstall,
             'wellKnownAuthServerUrl' => $wellKnownAuthServerUrl,

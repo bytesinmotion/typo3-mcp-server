@@ -10,6 +10,7 @@ use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\WorkspaceAspect;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Workspaces\Service\WorkspaceService;
 
@@ -29,10 +30,16 @@ class WorkspaceContextService
      * In live mode all MCP operations run in the live workspace (0): no MCP
      * workspace is created, nothing is staged as a draft and there is no
      * publishing step. Meant for building a new site, not for production.
+     *
+     * Without EXT:workspaces there is nothing to stage drafts in, so live mode
+     * is forced regardless of the setting.
      */
     public function isLiveMode(): bool
     {
         if ($this->liveMode === null) {
+            if (!self::isWorkspacesAvailable()) {
+                return $this->liveMode = true;
+            }
             try {
                 $this->liveMode = (bool)GeneralUtility::makeInstance(ExtensionConfiguration::class)
                     ->get('mcp_server', 'liveWorkspaceMode');
@@ -43,6 +50,15 @@ class WorkspaceContextService
         }
 
         return $this->liveMode;
+    }
+
+    /**
+     * Whether EXT:workspaces is installed. It is optional: without it the
+     * extension runs in live mode only.
+     */
+    public static function isWorkspacesAvailable(): bool
+    {
+        return ExtensionManagementUtility::isLoaded('workspaces');
     }
 
     /**

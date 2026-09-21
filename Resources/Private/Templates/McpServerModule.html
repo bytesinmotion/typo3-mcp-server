@@ -23,8 +23,16 @@
                             <p class="mb-0">
                                 MCP tools write directly to the live database. Changes are public immediately &mdash; there is no draft stage,
                                 no publishing step and no undo, and tables without workspace support are writable as well.
-                                Turn this off under <strong>Admin Tools &rarr; Settings &rarr; Extension Configuration &rarr; mcp_server</strong>
-                                (<code>liveWorkspaceMode</code>) to stage changes in a workspace again.
+                                <f:if condition="{workspacesAvailable}">
+                                    <f:then>
+                                        Turn this off under <strong>Admin Tools &rarr; Settings &rarr; Extension Configuration &rarr; mcp_server</strong>
+                                        (<code>liveWorkspaceMode</code>) to stage changes in a workspace again.
+                                    </f:then>
+                                    <f:else>
+                                        The system extension <strong>workspaces</strong> is not installed, so live mode is always on.
+                                        Install it to stage changes as drafts instead.
+                                    </f:else>
+                                </f:if>
                             </p>
                         </div>
                     </f:if>

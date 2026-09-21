@@ -12,10 +12,12 @@ $EM_CONF[$_EXTKEY] = [
     'constraints' => [
         'depends' => [
             'typo3' => '12.4.0-14.99.99',
-            'workspaces' => '12.4.0-14.99.99',
             'php' => '8.2.0-8.99.99',
         ],
         'conflicts' => [],
-        'suggests' => [],
+        'suggests' => [
+            // Optional: without it MCP runs in live mode only
+            'workspaces' => '12.4.0-14.99.99',
+        ],
     ],
 ];

@@ -7,5 +7,5 @@ additionalStandaloneTables = sys_file_metadata
 # cat=mcp/files; type=int+; label=Maximum file size (MiB): Upper limit for files fetched from URLs or received through pre-signed uploads via the UploadFile tool. Default: 500
 maxFileSizeMb = 500
 
-# cat=mcp/workspace; type=boolean; label=Live mode (no workspace): Write directly to the live database instead of staging changes in an automatically created MCP workspace. Intended for building a new site, where drafts and a publishing step only get in the way. WARNING: every change is immediately public, there is no review and no undo, and non-workspace-capable tables become writable as well. Leave this off on production sites.
+# cat=mcp/workspace; type=boolean; label=Live mode (no workspace): Write directly to the live database instead of staging changes in an automatically created MCP workspace. Intended for building a new site, where drafts and a publishing step only get in the way. WARNING: every change is immediately public, there is no review and no undo, and non-workspace-capable tables become writable as well. Leave this off on production sites. Always on when the system extension workspaces is not installed.
 liveWorkspaceMode = 0
