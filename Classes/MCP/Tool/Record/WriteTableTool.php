@@ -2353,8 +2353,15 @@ class WriteTableTool extends AbstractRecordTool
                 $flexFormArray = is_array($value) ? $value : (is_string($value) && strpos($value, '{') === 0 ? json_decode($value, true) : null);
 
                 if (is_array($flexFormArray)) {
-                    $data[$fieldName] = GeneralUtility::makeInstance(FlexFormDataMapper::class)
+                    $flexFormValue = GeneralUtility::makeInstance(FlexFormDataMapper::class)
                         ->toDataMapValue($table, $fieldName, $flexFormArray, $data + $row);
+                    if ($flexFormValue['data'] === []) {
+                        // Nothing to write: an empty data array would make DataHandler
+                        // store an empty string, which breaks every later FlexForm update
+                        unset($data[$fieldName]);
+                    } else {
+                        $data[$fieldName] = $flexFormValue;
+                    }
                 }
             }
         }

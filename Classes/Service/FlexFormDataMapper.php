@@ -56,7 +56,7 @@ class FlexFormDataMapper
         foreach ($input as $key => $value) {
             $name = $prefix . $key;
             // A list (e.g. multi-select items) is one field value in TYPO3's comma-separated format
-            if (is_array($value) && array_is_list($value)) {
+            if (is_array($value) && $value !== [] && array_is_list($value)) {
                 $values[$name] = implode(',', array_map('strval', $value));
                 continue;
             }
