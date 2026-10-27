@@ -125,20 +125,13 @@ abstract class AbstractFunctionalTest extends FunctionalTestCase
     {
         $connection = $this->connectionPool->getConnectionForTable('sys_workspace');
         $connection->insert('sys_workspace', [
+            // Only columns every supported TYPO3 version has, the rest keeps its default
             'title' => $title,
             'description' => 'Workspace for testing',
             'adminusers' => '1',
             'members' => '1',
             'db_mountpoints' => '0',
             'file_mountpoints' => '',
-            'publish_time' => 0,
-            'unpublish_time' => 0,
-            'live_edit' => 0,
-            'swap_modes' => 0,
-            'publish_access' => 0,
-            'stagechg_notification' => 0,
-            'custom_stages' => 0,
-            'uid' => 0,
             'pid' => 0,
         ]);
         

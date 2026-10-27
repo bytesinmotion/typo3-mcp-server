@@ -48,7 +48,13 @@ class LiveModeTest extends AbstractFunctionalTest
     protected function setLiveMode(bool $enabled): void
     {
         $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['mcp_server']['liveWorkspaceMode'] = $enabled ? '1' : '0';
+        // purgeInstances() also drops the DI container, which TYPO3 >= 14 needs for core services
+        $container = GeneralUtility::getContainer();
         GeneralUtility::purgeInstances();
+        GeneralUtility::setContainer($container);
+        // The container keeps its shared WorkspaceContextService, so reset its cached flag as well
+        $workspaceContextService = GeneralUtility::makeInstance(WorkspaceContextService::class);
+        (new \ReflectionProperty($workspaceContextService, 'liveMode'))->setValue($workspaceContextService, null);
     }
 
     public function testLiveModeStaysInLiveWorkspaceAndCreatesNoWorkspace(): void
