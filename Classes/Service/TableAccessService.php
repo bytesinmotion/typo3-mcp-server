@@ -11,6 +11,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryHelper;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\SingletonInterface;
@@ -143,6 +144,32 @@ class TableAccessService implements SingletonInterface
     }
     
     /**
+     * Physical table names per database connection, filled on first use.
+     *
+     * @var array<string, array<string, true>>
+     */
+    private array $databaseTables = [];
+
+    /**
+     * Whether the table exists in its database (TCA may define virtual tables without one).
+     * If the schema cannot be read, the table is assumed to exist (previous behaviour).
+     */
+    protected function tableExistsInDatabase(string $table): bool
+    {
+        try {
+            $connection = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable($table);
+            $key = (string)$connection->getDatabase();
+            if (!isset($this->databaseTables[$key])) {
+                $names = $connection->createSchemaManager()->listTableNames();
+                $this->databaseTables[$key] = array_fill_keys(array_map('strtolower', $names), true);
+            }
+            return isset($this->databaseTables[$key][strtolower($table)]);
+        } catch (\Throwable) {
+            return true;
+        }
+    }
+
+    /**
      * Check if a table can be accessed by the current user
      *
      * @param string $table Table name
@@ -178,6 +205,14 @@ class TableAccessService implements SingletonInterface
         // Check if table exists in TCA
         if (!isset($GLOBALS['TCA'][$table])) {
             $info['reasons'][] = 'Table does not exist in TCA';
+            return $info;
+        }
+
+        // TCA-only tables (e.g. EXT:image_autoresize's virtual tx_imageautoresize for its
+        // configuration form) have no database table. In live mode the workspace check
+        // below no longer filters them out, so every query on them would fail.
+        if (!$this->tableExistsInDatabase($table)) {
+            $info['reasons'][] = 'Table does not exist in the database (TCA only)';
             return $info;
         }
         
